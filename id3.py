@@ -3,6 +3,7 @@ from design_tree import *
 import math
 
 
+# То что подается на вход алгоритму при построении решающего дерева
 class DataPoint (object):
     def __init__ (self, features, target, weight):
         self.features = features
@@ -143,21 +144,12 @@ def findBestThreshold (data_rdd, feature_index, total_entropy, verbose=False):
                    total_weights[1] - zeros_weight,
                    total_weights[2] - ones_weight)
 
-    # TODO:
-    # пересчитываем промежуточные веса для каждого порога
-    # считаем энтропию разделения для каждого из порогов
     threshold_less_equal_weights = feature_target_weight_rdd.mapPartitionsWithIndex (calcCurrentPartitionZerosOnesWeights)
 
     if verbose:
         print "threshold_less_equal_weights", threshold_less_equal_weights.collect()
 
     def calcThresholdEntropy (threshold_weights):
-        def pLogP (p):
-            if (p > 0):
-                return p * math.log(p)/math.log(2)
-            else:
-                return 0
-
         threshold, left_zeros, left_ones, right_zeros, right_ones = threshold_weights
 
         left_weight = left_zeros + left_ones
@@ -191,20 +183,6 @@ def findBestThreshold (data_rdd, feature_index, total_entropy, verbose=False):
     return (feature_index, max_threshold[0],max_threshold[1])
 
 
-# Функция должна принимать на вход
-#  - массив фич (список числовых фич)
-#  - массив целей (0/1)
-#  - массив весов (число w)
-#  - на выходе должна выдвавать классифицирующее дерево.
-#  дерево мы проверим на тестовой выборке, посчитав по нему F меру
-# еще такой вопрос. ЧТобы отличать разные фичи друг от друга
-
-# Джойнить будем на входе
-# Ожидаем, что data будет датасетом из словарей вида:
-# {"f":[], - фичи
-#  "t":0/1, - целевая функция
-#  "w":double - веса фич
-# }
 
 def id3Implementation (data_rdd,
                        tree_depth,
@@ -236,23 +214,6 @@ def id3Implementation (data_rdd,
     left_tree_dataset = data_rdd.filter(lambda x:x.features[best_feature_threshold[0]] <= best_feature_threshold[1])
     right_tree_dataset = data_rdd.filter(lambda x:x.features[best_feature_threshold[0]] > best_feature_threshold[1])
 
-#    print """=======
-#tree depth = {}
-#entropy_of_dataset = {}
-#feature index = {}
-#threshold = {}
-#information gain = {}
-#dataset size = {}
-#left dataset size = {}
-#right dataset size = {}
-#""".format (tree_depth,
-#            entropy_of_dataset,
-#            best_feature_threshold[0],
-#            best_feature_threshold[1],
-#            best_feature_threshold[2],
-#            data_rdd.count(),
-#            left_tree_dataset.count(),
-#            right_tree_dataset.count())
 
     if verbose:
         print "==================="
@@ -272,11 +233,6 @@ def id3Implementation (data_rdd,
 
 
 # Строит решающее дерево на основе датасета
-# Каждая строчка датасета - это словарь вида
-# {"f":[], - фичи
-#  "t":0/1, - целевая функция
-#  "w":double - веса фич
-# }
 def id3 (data_rdd, verbose=False):
     return DesignTree (id3Implementation (data_rdd, tree_depth=4, verbose=verbose))
 
